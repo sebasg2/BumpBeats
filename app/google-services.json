@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "527021374214",
+    "project_id": "bumpbeats",
+    "storage_bucket": "bumpbeats.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:527021374214:android:27e6841acebc045fefbc87",
+        "android_client_info": {
+          "package_name": "com.example.bumpbeats"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBkPO7hNnxgQ2KM7lyFgP7ubKYL2I0z0AI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
