@@ -1,40 +1,43 @@
 package com.example.bumpbeats.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.bumpbeats.ui.screens.HeartRateScreen
 import com.example.bumpbeats.ui.screens.SignUpScreen
-import com.example.bumpbeats.ui.screens.WelcomeScreen
 import com.example.bumpbeats.ui.screens.SuccessScreen
+import com.example.bumpbeats.ui.screens.WelcomeScreen
+
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
     NavHost(navController, startDestination = "welcome") {
-
-        // Welcome screen route
         composable("welcome") {
             WelcomeScreen(
-                onSignInClick = { /* Navigate to Sign In screen */ },
+                onSignInClick = { /* Navigate to Sign In screen if implemented */ },
                 onSignUpClick = { navController.navigate("signup") }
             )
         }
 
-        // Sign-up screen route
         composable("signup") {
             SignUpScreen(
                 onSignUpSuccess = { navController.navigate("success") },
                 onSignUpError = { errorMessage ->
-                    // Log the error or display a message (e.g., Toast or Snackbar)
                     println("Sign-up error: $errorMessage")
                 }
             )
         }
 
-        // Success screen route
         composable("success") {
-            SuccessScreen()
+            SuccessScreen(onNavigateToHeartRate = {
+                navController.navigate("heartRate")
+            })
+        }
+
+        composable("heartRate") {
+            HeartRateScreen() // Remove the context parameter
         }
     }
 }
-
