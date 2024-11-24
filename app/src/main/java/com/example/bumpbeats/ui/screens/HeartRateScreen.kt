@@ -181,25 +181,32 @@ fun calculateBPM(
     samplingRate: Int,
     bpm: MutableState<Int>
 ) {
-    val threshold = ecgData.maxOrNull()?.times(0.8f) ?: return // Set a threshold to detect R waves
+    if (ecgData.isEmpty()) return
+
+    // Step 1: Signal Smoothing
+    val smoothedData = ecgData.mapIndexed { i, value ->
+        when {
+            i == 0 -> value // First value (no previous data for smoothing)
+            i == ecgData.size - 1 -> value // Last value
+            else -> (ecgData[i - 1] + value + ecgData[i + 1]) / 3 // Moving average
+        }
+    }
+
+    // Step 2: Peak Detection (R-wave detection)
+    val threshold = smoothedData.maxOrNull()?.times(0.8f) ?: return
     val rWaveIndices = mutableListOf<Int>()
 
-    // Detect R-wave peaks
-    for (i in 1 until ecgData.size - 1) {
-        if (ecgData[i] > threshold && ecgData[i] > ecgData[i - 1] && ecgData[i] > ecgData[i + 1]) {
+    for (i in 1 until smoothedData.size - 1) {
+        if (smoothedData[i] > threshold && smoothedData[i] > smoothedData[i - 1] && smoothedData[i] > smoothedData[i + 1]) {
             rWaveIndices.add(i)
         }
     }
 
-    // Calculate heart rate
+    // Step 3: Calculate BPM
     if (rWaveIndices.size > 1) {
-        val largeSquareSamples = (samplingRate * 0.2).toInt() // Number of samples in a large square
         val intervalsInSamples = rWaveIndices.zipWithNext { a, b -> b - a } // Intervals in samples
+        val avgIntervalInSeconds = intervalsInSamples.map { it.toFloat() / samplingRate }.average() // Average interval in seconds
 
-        // Average interval in large squares
-        val avgIntervalInLargeSquares = intervalsInSamples.map { it / largeSquareSamples.toFloat() }.average()
-
-        // BPM calculation using large square intervals
-        bpm.value = (300 / avgIntervalInLargeSquares).toInt()
+        bpm.value = (60 / avgIntervalInSeconds).toInt() // Calculate BPM
     }
 }
