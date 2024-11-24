@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -30,8 +31,18 @@ fun HeartRateScreen() {
     var serverPort by remember { mutableStateOf(0) }
     var isConnected by remember { mutableStateOf(false) }
     var connectionError by remember { mutableStateOf(false) }
+    val bpm = remember { mutableStateOf(0) }
+
+    // Timer state for 15 seconds
+    var showBpm by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        // Timer to show BPM after 15 seconds
+        coroutineScope.launch(Dispatchers.Main) {
+            kotlinx.coroutines.delay(15000) // Wait for 15 seconds
+            showBpm = true
+        }
+
         // Listen for server broadcast
         coroutineScope.launch(Dispatchers.IO) {
             try {
@@ -77,6 +88,9 @@ fun HeartRateScreen() {
                                 if (ecgData.size > 100) {
                                     ecgData.removeAt(0) // Keep the list manageable
                                 }
+
+                                // Detect peaks and calculate BPM
+                                calculateBPM(ecgData, 100, bpm)
                             }
                         }
                     }
@@ -111,6 +125,16 @@ fun HeartRateScreen() {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(text = "Heart Rate Monitor", modifier = Modifier.padding(16.dp))
+
+                    // Display BPM only after 60 seconds
+                    if (showBpm) {
+                        Text(
+                            text = "BPM: ${bpm.value}",
+                            fontSize = 24.sp, // Set font size with sp
+                            color = Color.Black, // Changed to black
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
 
                     // ECG Graph using Canvas
                     Canvas(
@@ -148,5 +172,34 @@ fun HeartRateScreen() {
                 }
             }
         }
+    }
+}
+
+// Function to calculate BPM based on detected peaks
+fun calculateBPM(
+    ecgData: List<Float>,
+    samplingRate: Int,
+    bpm: MutableState<Int>
+) {
+    val threshold = ecgData.maxOrNull()?.times(0.8f) ?: return // Set a threshold to detect R waves
+    val rWaveIndices = mutableListOf<Int>()
+
+    // Detect R-wave peaks
+    for (i in 1 until ecgData.size - 1) {
+        if (ecgData[i] > threshold && ecgData[i] > ecgData[i - 1] && ecgData[i] > ecgData[i + 1]) {
+            rWaveIndices.add(i)
+        }
+    }
+
+    // Calculate heart rate
+    if (rWaveIndices.size > 1) {
+        val largeSquareSamples = (samplingRate * 0.2).toInt() // Number of samples in a large square
+        val intervalsInSamples = rWaveIndices.zipWithNext { a, b -> b - a } // Intervals in samples
+
+        // Average interval in large squares
+        val avgIntervalInLargeSquares = intervalsInSamples.map { it / largeSquareSamples.toFloat() }.average()
+
+        // BPM calculation using large square intervals
+        bpm.value = (300 / avgIntervalInLargeSquares).toInt()
     }
 }
