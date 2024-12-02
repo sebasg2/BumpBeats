@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.bumpbeats.ui.screens.ECGScreen
 import com.example.bumpbeats.ui.screens.HeartRateScreen
 import com.example.bumpbeats.ui.screens.SignInScreen
 import com.example.bumpbeats.ui.screens.SignUpScreen
@@ -16,17 +17,17 @@ fun AppNavigation(navController: NavHostController) {
         // Welcome Screen
         composable("welcome") {
             WelcomeScreen(
-                onSignInClick = { navController.navigate("signin") }, // Navigate to SignInScreen
-                onSignUpClick = { navController.navigate("signup") }  // Navigate to SignUpScreen
+                onSignInClick = { navController.navigate("signin") },
+                onSignUpClick = { navController.navigate("signup") }
             )
         }
 
         // Sign In Screen
         composable("signin") {
             SignInScreen(
-                onSignInSuccess = { navController.navigate("success") }, // Navigate to SuccessScreen
+                onSignInSuccess = { navController.navigate("success") },
                 onSignInError = { errorMessage ->
-                    println("Sign-in error: $errorMessage") // Handle error if sign-in fails
+                    println("Sign-in error: $errorMessage")
                 }
             )
         }
@@ -34,23 +35,30 @@ fun AppNavigation(navController: NavHostController) {
         // Sign Up Screen
         composable("signup") {
             SignUpScreen(
-                onSignUpSuccess = { navController.navigate("success") }, // Navigate to SuccessScreen
+                onSignUpSuccess = { navController.navigate("success") },
                 onSignUpError = { errorMessage ->
-                    println("Sign-up error: $errorMessage") // Handle error if sign-up fails
+                    println("Sign-up error: $errorMessage")
                 }
             )
         }
 
         // Success Screen
         composable("success") {
-            SuccessScreen(onNavigateToHeartRate = {
-                navController.navigate("heartRate") // Navigate to HeartRateScreen
-            })
+            SuccessScreen(
+                onNavigateToHeartRate = { navController.navigate("heartRate") },
+                onNavigateToECG = { navController.navigate("ecg") }
+            )
         }
 
-        // Heart Rate Monitor Screen
+        // Heart Rate Screen
         composable("heartRate") {
-            HeartRateScreen() // Load Heart Rate Screen
+            HeartRateScreen()
+        }
+
+        // ECG Screen
+        composable("ecg") {
+            ECGScreen()
         }
     }
 }
+
