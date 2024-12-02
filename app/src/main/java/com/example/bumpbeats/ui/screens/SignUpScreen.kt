@@ -14,7 +14,6 @@ import com.example.bumpbeats.ui.theme.BumpBeatsTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import org.joda.time.LocalDate
-import org.joda.time.Weeks
 
 @Composable
 fun SignUpScreen(
@@ -157,26 +156,7 @@ fun SignUpScreen(
             label = { Text("Password") },
             modifier = Modifier.fillMaxWidth()
         )
-        Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-            Text(text = "Password Requirements:", color = Color.Gray)
-            Text(
-                text = if (hasMinLength.value) "✔ At least 8 characters" else "✘ At least 8 characters",
-                color = if (hasMinLength.value) Color.Green else Color.Red
-            )
-            Text(
-                text = if (hasUppercase.value) "✔ At least 1 uppercase letter" else "✘ At least 1 uppercase letter",
-                color = if (hasUppercase.value) Color.Green else Color.Red
-            )
-            Text(
-                text = if (hasNumber.value) "✔ At least 1 number" else "✘ At least 1 number",
-                color = if (hasNumber.value) Color.Green else Color.Red
-            )
-            Text(
-                text = if (hasSymbol.value) "✔ At least 1 symbol" else "✘ At least 1 symbol",
-                color = if (hasSymbol.value) Color.Green else Color.Red
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Submit button
         Button(
@@ -193,7 +173,8 @@ fun SignUpScreen(
                                 "trimester" to trimester,
                                 "expectedDueDate" to calculatedDueDate,
                                 "weight" to weight.value,
-                                "email" to email.value
+                                "email" to email.value,
+                                "signUpDate" to LocalDate.now().toString() // Save sign-up date
                             )
                             db.collection("users").document(auth.currentUser?.uid ?: "")
                                 .set(user)
@@ -231,4 +212,3 @@ fun SignUpScreenPreview() {
         SignUpScreen(onSignUpSuccess = {}, onSignUpError = {})
     }
 }
-
