@@ -1,7 +1,7 @@
 package com.example.bumpbeats.ui.screens
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.* // Import for layouts
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,14 +32,12 @@ fun ECGScreen() {
     var isConnected by remember { mutableStateOf(false) }
     var connectionError by remember { mutableStateOf(false) }
     val bpm = remember { mutableStateOf(0) }
-
-    // Timer state for 15 seconds
-    var showBpm by remember { mutableStateOf(false) }
+    var showBpm by remember { mutableStateOf(false) } // State to control BPM display
 
     LaunchedEffect(Unit) {
         // Timer to show BPM after 15 seconds
         coroutineScope.launch(Dispatchers.Main) {
-            kotlinx.coroutines.delay(15000) // Wait for 15 seconds
+            kotlinx.coroutines.delay(25000) // Wait for 15 seconds
             showBpm = true
         }
 
@@ -106,12 +104,13 @@ fun ECGScreen() {
             }
         }
 
-        // Display the ECG data as a graph
-        Box(
+        // Display the ECG data as a graph and final BPM
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            contentAlignment = Alignment.TopCenter
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             if (connectionError) {
                 Text(
@@ -120,55 +119,50 @@ fun ECGScreen() {
                     modifier = Modifier.padding(16.dp)
                 )
             } else {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // ECG Graph using Canvas
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .padding(16.dp)
                 ) {
-                    Text(text = "Heart Rate Monitor", modifier = Modifier.padding(16.dp))
+                    if (ecgData.isNotEmpty()) {
+                        // Calculate the step size for X-axis based on available width
+                        val stepX = size.width / (ecgData.size - 1).coerceAtLeast(1)
 
-                    // Display BPM only after 60 seconds
-                    if (showBpm) {
-                        Text(
-                            text = "BPM: ${bpm.value}",
-                            fontSize = 24.sp, // Set font size with sp
-                            color = Color.Black, // Changed to black
-                            modifier = Modifier.padding(8.dp)
+                        // Normalize Y values to fit within the canvas height
+                        val maxY = ecgData.maxOrNull() ?: 1f
+                        val minY = ecgData.minOrNull() ?: 0f
+                        val rangeY = (maxY - minY).coerceAtLeast(1f)
+
+                        // Map data points to canvas coordinates
+                        val path = Path().apply {
+                            ecgData.forEachIndexed { index, value ->
+                                val x = index * stepX
+                                val y = size.height - ((value - minY) / rangeY * size.height)
+                                if (index == 0) moveTo(x, y) else lineTo(x, y)
+                            }
+                        }
+
+                        // Draw the path
+                        drawPath(
+                            path = path,
+                            color = Color.Red,
+                            style = Stroke(width = 2.dp.toPx())
                         )
                     }
+                }
 
-                    // ECG Graph using Canvas
-                    Canvas(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .padding(16.dp)
-                    ) {
-                        if (ecgData.isNotEmpty()) {
-                            // Calculate the step size for X-axis based on available width
-                            val stepX = size.width / (ecgData.size - 1).coerceAtLeast(1)
+                Spacer(modifier = Modifier.height(16.dp))
 
-                            // Normalize Y values to fit within the canvas height
-                            val maxY = ecgData.maxOrNull() ?: 1f
-                            val minY = ecgData.minOrNull() ?: 0f
-                            val rangeY = (maxY - minY).coerceAtLeast(1f)
-
-                            // Map data points to canvas coordinates
-                            val path = Path().apply {
-                                ecgData.forEachIndexed { index, value ->
-                                    val x = index * stepX
-                                    val y = size.height - ((value - minY) / rangeY * size.height)
-                                    if (index == 0) moveTo(x, y) else lineTo(x, y)
-                                }
-                            }
-
-                            // Draw the path
-                            drawPath(
-                                path = path,
-                                color = Color.Red,
-                                style = Stroke(width = 2.dp.toPx())
-                            )
-                        }
-                    }
+                // Display BPM only if 15 seconds have passed
+                if (showBpm) {
+                    Text(
+                        text = "Final BPM: ${bpm.value}",
+                        fontSize = 24.sp,
+                        color = Color.Black,
+                        modifier = Modifier.padding(8.dp)
+                    )
                 }
             }
         }
@@ -209,5 +203,3 @@ fun calculateBPM(
         bpm.value = (60 / avgIntervalInSeconds).toInt() // Calculate BPM
     }
 }
-
-
