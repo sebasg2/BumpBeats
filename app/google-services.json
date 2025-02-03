@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "527021374214",
-    "project_id": "bumpbeats",
-    "storage_bucket": "bumpbeats.firebasestorage.app"
+    "project_number": "316408220163",
+    "project_id": "bumpbeats-76330",
+    "storage_bucket": "bumpbeats-76330.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:527021374214:android:27e6841acebc045fefbc87",
+        "mobilesdk_app_id": "1:316408220163:android:88295490b11b3964c91c36",
         "android_client_info": {
           "package_name": "com.example.bumpbeats"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "316408220163-ca4khkm05517ro22eujsfb23gaqm0qct.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.bumpbeats",
+            "certificate_hash": "52696c1214ef241b964ed220c4a87c5efd3fd7b8"
+          }
+        },
+        {
+          "client_id": "316408220163-f5a8k1gggmd878dpmkphbhtdg2h58d5q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyBkPO7hNnxgQ2KM7lyFgP7ubKYL2I0z0AI"
+          "current_key": "AIzaSyDr-Pm8YOsDYxXn9q-JboH1z1fBgDtubMU"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "316408220163-f5a8k1gggmd878dpmkphbhtdg2h58d5q.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
