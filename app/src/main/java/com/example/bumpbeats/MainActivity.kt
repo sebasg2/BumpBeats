@@ -39,7 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.bumpbeats.ui.theme.BumpBeatsTheme
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.Divider
 import android.util.Log
@@ -65,9 +64,9 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import com.example.bumpbeats.ui.theme.BumpBeatsTheme
 
 /////////////////////////////////////////////////////////////////////////////
-
 private const val TAG = "GoogleSignIn"
 
 class MainActivity : ComponentActivity() {
@@ -83,7 +82,7 @@ class MainActivity : ComponentActivity() {
 
         // Configure Google Sign-In
         val googleSignInOptions = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(getString(R.string.default_web_client_id)) // Your Web Client ID from Firebase
+            .requestIdToken(getString(R.string.default_web_client_id))
             .requestEmail()
             .build()
         googleSignInClient = GoogleSignIn.getClient(this, googleSignInOptions)
@@ -92,13 +91,32 @@ class MainActivity : ComponentActivity() {
         googleSignInLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             if (task.isSuccessful) {
-                val account = task.result
-                account?.let {
-                    firebaseAuthWithGoogle(it)
-                }
+                task.result?.let { firebaseAuthWithGoogle(it) }
             } else {
                 Log.e(TAG, "Google Sign-In failed: ${task.exception}")
                 showToast("Google Sign-In failed. Please try again.")
+            }
+        }
+
+        // Initialize the UI to show the correct screen based on Firebase authentication status
+        setContent {
+            BumpBeatsTheme {
+                if (firebaseAuth.currentUser != null) {
+                    // User is signed in, navigate to the home page
+                    HomePageScreen(
+                        userId = firebaseAuth.currentUser!!.uid,
+                        onNavigate = { destination ->
+                            handleNavigation(destination)
+                        }
+                    )
+                } else {
+                    // User not signed in, show Sign-In screen
+                    SignInScreen(
+                        onSignInSuccess = { navigateToHomePage() },
+                        onNavigateToSignUp = { navigateToSignUpScreen() },
+                        onGoogleSignIn = { startGoogleSignIn() }
+                    )
+                }
             }
         }
     }
@@ -113,71 +131,48 @@ class MainActivity : ComponentActivity() {
         firebaseAuth.signInWithCredential(credential)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    val user = firebaseAuth.currentUser
-                    user?.let {
-                        // Check if email is verified
-                        if (!user.isEmailVerified) {
-                            // If not verified, send a verification email
-                            user.sendEmailVerification()
-                                .addOnCompleteListener { verificationTask ->
-                                    if (verificationTask.isSuccessful) {
-                                        Log.d(TAG, "Verification email sent.")
-                                        showToast("Verification email sent. Please check your inbox.")
-                                    } else {
-                                        Log.e(TAG, "Failed to send verification email.")
-                                        showToast("Failed to send verification email.")
-                                    }
-                                }
-                        }
-
-                        // Store Google user data in Firestore
-                        val userDetails = hashMapOf(
-                            "firstName" to account.givenName,
-                            "lastName" to account.familyName,
-                            "email" to account.email,
-                            "uid" to user.uid
-                        )
-
-                        firestore.collection("users")
-                            .document(user.uid)
-                            .set(userDetails)
-                            .addOnSuccessListener {
-                                Log.d(TAG, "User data stored successfully in Firestore")
-                                navigateToHomePage() // Proceed to home page after storing user data
-                            }
-                            .addOnFailureListener { exception ->
-                                // Handle Firestore failure (optional cleanup)
-                                firebaseAuth.currentUser?.delete()
-                                    ?.addOnCompleteListener {
-                                        Log.e(TAG, "Failed to store user data in Firestore: ${exception.localizedMessage}")
-                                        showToast("Failed to store user data. Please try again.")
-                                    }
-                            }
-                    }
+                    storeUserData(account)
                 } else {
                     Log.e(TAG, "Sign-in failed: ${task.exception?.message}")
                     showToast("Sign-in failed. Please try again.")
                 }
             }
     }
+
+    private fun storeUserData(account: GoogleSignInAccount) {
+        val user = firebaseAuth.currentUser ?: return
+        val userDetails = hashMapOf(
+            "firstName" to account.givenName,
+            "lastName" to account.familyName,
+            "email" to account.email,
+            "uid" to user.uid
+        )
+
+        firestore.collection("users")
+            .document(user.uid)
+            .set(userDetails)
+            .addOnSuccessListener {
+                Log.d(TAG, "User data stored successfully in Firestore")
+                navigateToHomePage()
+            }
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "Failed to store user data: ${exception.localizedMessage}")
+                showToast("Failed to store user data. Please try again.")
+                firebaseAuth.signOut() // Sign out if user data can't be saved
+            }
+    }
+
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
-    private fun navigateToScreen(content: @Composable () -> Unit) {
-        setContent {
-            BumpBeatsTheme {
-                content()
-            }
-        }
-    }
-
-    private fun navigateToSignInScreen() {
+    private fun navigateToHomePage() {
         navigateToScreen {
-            SignInScreen(
-                onSignInSuccess = { navigateToHomePage() },
-                onNavigateToSignUp = { navigateToSignUpScreen() },
-                onGoogleSignIn = { startGoogleSignIn() }
+            HomePageScreen(
+                userId = firebaseAuth.currentUser?.uid ?: "",
+                onNavigate = { destination ->
+                    handleNavigation(destination)
+                }
             )
         }
     }
@@ -191,31 +186,35 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun navigateToHomePage() {
-        val userId = firebaseAuth.currentUser?.uid ?: return
+    private fun navigateToSignInScreen() {
         navigateToScreen {
-            HomePageScreen(
-                userId = userId,
-                onNavigate = { destination ->
-                    when (destination) {
-                        "HomePage" -> navigateToHomePage()
-                        "AppointmentsPage" -> navigateToScreen { AppointmentsPage() }
-                        "HealthTrackerPage" -> navigateToScreen { HealthTrackerPage() }
-                        "ChecklistPage" -> navigateToScreen { ChecklistPage() }
-                        "SettingsPage" -> navigateToScreen { SettingsPage() }
-                    }
-                }
+            SignInScreen(
+                onSignInSuccess = { navigateToHomePage() },
+                onNavigateToSignUp = { navigateToSignUpScreen() },
+                onGoogleSignIn = { startGoogleSignIn() }
             )
         }
     }
 
-    private fun navigateToChatPage() {
-        navigateToScreen {
-            ChatPage(onBack = { navigateToHomePage() })
+    private fun navigateToScreen(content: @Composable () -> Unit) {
+        setContent {
+            BumpBeatsTheme {
+                content()
+            }
+        }
+    }
+
+    private fun handleNavigation(destination: String) {
+        when (destination) {
+            "HomePage" -> navigateToHomePage()
+            "AppointmentsPage" -> navigateToScreen { AppointmentsPage() }
+            "HealthTrackerPage" -> navigateToScreen { HealthTrackerPage() }
+            "ChecklistPage" -> navigateToScreen { ChecklistPage() }
+            "SettingsPage" -> navigateToScreen { SettingsPage() }
+            else -> Log.e(TAG, "Unknown navigation destination: $destination")
         }
     }
 }
-
 @Composable
 fun SignUpScreen(
     onSignUpSuccess: () -> Unit, // Callback for successful sign-up
